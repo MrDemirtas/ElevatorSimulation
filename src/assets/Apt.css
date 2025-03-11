@@ -1,0 +1,29 @@
+.apt {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  width: 80%;
+  margin: 0 auto;
+  border: 1px solid #000;
+  background-color: lightgoldenrodyellow;
+}
+
+.floor {
+  height: 30vh;
+  padding: 24px;
+  width: 100%;
+  border: 1px solid #000;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.apt-elevator-column {
+  position: relative;
+}
+
+.human {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
