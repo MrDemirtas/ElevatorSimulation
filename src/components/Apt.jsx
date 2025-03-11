@@ -1,46 +1,14 @@
 import "../assets/Apt.css";
 
-import { apt, elevator } from "../data";
-import { createContext, useContext, useState } from "react";
+import { apt, defaultHumans, elevator } from "../data";
+import { createContext, useContext, useEffect, useState } from "react";
 
 import Elevator from "./Elevator";
 import cinAliSvg from "../assets/cinali.svg";
 
 export const CurrentStatus = createContext(null);
 export default function Apt() {
-  const [humans, setHumans] = useState([
-    {
-      id: crypto.randomUUID(),
-      name: "Cin Ali",
-      selectedFloor: Math.floor(Math.random() * (apt.floorCount + 1)) || 1,
-      currentFloor: 0,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Cin Furkan",
-      selectedFloor: Math.floor(Math.random() * (apt.floorCount + 1)) || 1,
-      currentFloor: 0,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Cin Ece",
-      selectedFloor: Math.floor(Math.random() * (apt.floorCount + 1)) || 1,
-      currentFloor: 0,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Cin Ece",
-      selectedFloor: Math.floor(Math.random() * (apt.floorCount + 1)) || 1,
-      currentFloor: 0,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Cin Ece",
-      selectedFloor: Math.floor(Math.random() * (apt.floorCount + 1)) || 1,
-      currentFloor: 0,
-    },
-  ]);
-
+  const [humans, setHumans] = useState(defaultHumans);
   const [currentStatus, setCurrentStatus] = useState("waiting");
 
   const [elevatorState, setElevatorState] = useState({
@@ -51,30 +19,108 @@ export default function Apt() {
     humans: [],
   });
 
-  const runElevator = (floorCount) => {
-    setCurrentStatus("closingDoor");
-    setTimeout(() => {
-      setElevatorState({
-        ...elevatorState,
-        goingToFloor: floorCount,
-        oldFloor: elevatorState.goingToFloor,
-        direction: floorCount > elevatorState.floor ? "up" : "down",
-        location: `${floorCount * 30}vh`,
-      });
-      setCurrentStatus("moving");
-      setTimeout(() => {
-        setCurrentStatus("openingDoor");
+  const [aptFloorCount, setAptFloorCount] = useState(apt.floorCount);
+
+  useEffect(() => {
+    switch (currentStatus) {
+      case "moving":
+        goToNextStation();
+        break;
+      case "waiting":
+        runElevator();
+        break;
+      case "closingDoor":
+        elevatorState.humans.map((human) => {
+          if (human.selectedFloor === elevatorState.goingToFloor) {
+            setHumans(humans.filter((x) => x.id !== human.id));
+          }
+        });
+        setElevatorState({
+          ...elevatorState,
+          humans: elevatorState.humans.filter((human) => human.selectedFloor !== elevatorState.goingToFloor),
+        });
         setTimeout(() => {
-          setCurrentStatus("waiting");
-        }, 1000);
-      }, Math.abs(floorCount - elevatorState.goingToFloor) * 2500);
-    }, 3000);
+          setCurrentStatus("moving");
+        }, 2500);
+        break;
+      default:
+        break;
+    }
+  }, [currentStatus]);
+
+  function findClosest(target, numbers) {
+    return numbers.reduce((closest, num) => (Math.abs(num - target) < Math.abs(closest - target) ? num : closest));
+  }
+
+  const goToNextStation = () => {
+    if (humans.length === 0 && elevatorState.humans.length === 0) return;
+
+    let aptFloors = [];
+    for (let index = 1; index < aptFloorCount + 1; index++) {
+      aptFloors.push(index);
+    }
+    const selectedFloorsInElevator = elevatorState.humans.map((human) => human.selectedFloor);
+    const selectedFloorsOutElevator = humans
+      .filter((human) => elevatorState.humans.find((x) => x.id !== human.id))
+      .map((human) => human.currentFloor);
+
+    const elevatorStations = Array.from(new Set([...selectedFloorsInElevator, ...selectedFloorsOutElevator])).filter(
+      (x) => x !== elevatorState.goingToFloor
+    );
+
+    const nextStation = findClosest(elevatorState.goingToFloor, elevatorStations);
+    setElevatorState({
+      ...elevatorState,
+      goingToFloor: nextStation,
+      oldFloor: elevatorState.goingToFloor,
+      direction: nextStation > elevatorState.goingToFloor ? "up" : "down",
+      location: `${nextStation * 30}vh`,
+    });
+    setTimeout(() => {
+      setCurrentStatus("openingDoor");
+      setTimeout(() => {
+        setCurrentStatus("waiting");
+      }, 1000);
+    }, Math.abs(nextStation - elevatorState.goingToFloor) * 2500);
+  };
+
+  const runElevator = () => {
+    const filteredHumans = humans.filter((human) => human.currentFloor === elevatorState.goingToFloor);
+    setHumans(humans.filter((human) => human.currentFloor !== elevatorState.goingToFloor));
+    setElevatorState({
+      ...elevatorState,
+      humans: [...elevatorState.humans, ...filteredHumans],
+    });
+
+    setTimeout(() => {
+      setCurrentStatus("closingDoor");
+      setTimeout(() => {
+        setCurrentStatus("moving");
+      }, 3000);
+    }, 2500);
+
+    // setTimeout(() => {
+    //   setElevatorState({
+    //     ...elevatorState,
+    //     goingToFloor: floorCount,
+    //     oldFloor: elevatorState.goingToFloor,
+    //     direction: floorCount > elevatorState.goingToFloor ? "up" : "down",
+    //     location: `${floorCount * 30}vh`,
+    //   });
+    //   setCurrentStatus("moving");
+    //   setTimeout(() => {
+    //     setCurrentStatus("openingDoor");
+    //     setTimeout(() => {
+    //       setCurrentStatus("waiting");
+    //     }, 1000);
+    //   }, Math.abs(floorCount - elevatorState.goingToFloor) * 2500);
+    // }, 3000);
   };
 
   const getFloor = () => {
     let floors = [];
-    for (let index = 1; index < apt.floorCount + 1; index++) {
-      floors.push(<Floor key={index} floorCount={index} runElevator={runElevator} />);
+    for (let index = 1; index < aptFloorCount + 1; index++) {
+      floors.push(<Floor key={index} floorCount={index} />);
     }
     return floors.reverse();
   };
@@ -90,10 +136,11 @@ export default function Apt() {
         <div className="apt-floor-column">
           {getFloor()}
           <div className="floor">
-            <button onClick={() => runElevator(0)}>Çağır</button>
-            {humans.map((human) => (
-              <Human key={human.id} {...human} />
-            ))}
+            {humans
+              .filter((human) => human.currentFloor === 0)
+              .map((human) => (
+                <Human key={human.id} {...human} />
+              ))}
           </div>
         </div>
       </div>
@@ -101,11 +148,15 @@ export default function Apt() {
   );
 }
 
-const Floor = ({ floorCount, runElevator }) => {
+const Floor = ({ floorCount }) => {
+  const { humans } = useContext(CurrentStatus);
   return (
     <div className="floor">
-      <button onClick={() => runElevator(floorCount)}>Çağır</button>
-      <span>Kat {floorCount}</span>
+      {humans
+        .filter((human) => human.currentFloor === floorCount)
+        .map((human) => (
+          <Human key={human.id} {...human} />
+        ))}
     </div>
   );
 };

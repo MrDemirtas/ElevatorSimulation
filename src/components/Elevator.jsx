@@ -42,17 +42,17 @@ export default function Elevator() {
 }
 
 const Human = ({ id, name, selectedFloor, currentFloor, elevatorState, setElevatorState }) => {
-  const handleRemoveElevator = () => {
-    setElevatorState({
-      ...elevatorState,
-      humans: elevatorState.humans.filter((human) => human.id !== id),
-    });
-  };
+  // const handleRemoveElevator = () => {
+  //   setElevatorState({
+  //     ...elevatorState,
+  //     humans: elevatorState.humans.filter((human) => human.id !== id),
+  //   });
+  // };
 
   return (
     <>
       {!elevatorState.humans.includes(id) && (
-        <div className="human" onClick={handleRemoveElevator}>
+        <div className="human">
           <span>{name}</span>
           <span>{selectedFloor}</span>
           <img src={cinAliSvg} />
