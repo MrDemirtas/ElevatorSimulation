@@ -6,6 +6,7 @@ export const elevator = {
   maxHuman: 4,
 };
 
+// * Gideceği katı belirleyen fonksiyon, bulunduğu kattan farklı bir kat seçmesi için
 const getRandomFloor = (floor) => {
   let randomFloor = Math.floor(Math.random() * (apt.floorCount + 1));
   if (randomFloor === floor) {
