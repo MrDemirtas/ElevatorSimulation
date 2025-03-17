@@ -1,6 +1,6 @@
 import "../assets/Apt.css";
 
-import { apt, defaultHumans, elevator } from "../data";
+import { apt, defaultHumans } from "../data";
 import { createContext, useContext, useEffect, useState } from "react";
 
 import Elevator from "./Elevator";
@@ -32,9 +32,10 @@ export default function Apt() {
       case "closingDoor":
         elevatorState.humans.map((human) => {
           if (human.selectedFloor === elevatorState.goingToFloor) {
-            setHumans(humans.filter((x) => x.id !== human.id));
+            humans.find((x) => x.id === human.id).currentFloor = elevatorState.goingToFloor;
           }
         });
+        setHumans([...humans]);
         setElevatorState({
           ...elevatorState,
           humans: elevatorState.humans.filter((human) => human.selectedFloor !== elevatorState.goingToFloor),
@@ -54,7 +55,8 @@ export default function Apt() {
   }
 
   const goToNextStation = () => {
-    if (humans.length === 0 && elevatorState.humans.length === 0) return;
+    const remHumans = humans.filter((human) => human.currentFloor !== human.selectedFloor);
+    if (remHumans.length === 0 && elevatorState.humans.length === 0) return;
 
     let aptFloors = [];
     for (let index = 1; index < aptFloorCount + 1; index++) {
@@ -66,7 +68,7 @@ export default function Apt() {
 
     // * Asasnsörde olmayan insanların bulunduğu katlar
     const selectedFloorsOutElevator = humans
-      .filter((human) => elevatorState.humans.find((x) => x.id !== human.id))
+      .filter((human) => elevatorState.humans.find((x) => x.id !== human.id && x.selectedFloor === human.currentFloor))
       .map((human) => human.currentFloor);
 
     // * Dizi içerisinde tekrar eden değerleri silip, asansörün gideceği katları belirliyoruz
@@ -94,8 +96,10 @@ export default function Apt() {
 
   // * Asansör çalıştırma fonksiyonu (her waiting durumunda çalışır)
   const runElevator = () => {
-    const filteredHumans = humans.filter((human) => human.currentFloor === elevatorState.goingToFloor);
-    setHumans(humans.filter((human) => human.currentFloor !== elevatorState.goingToFloor));
+    const filteredHumans = humans.filter(
+      (human) => human.currentFloor === elevatorState.goingToFloor && human.selectedFloor !== human.currentFloor
+    );
+
     setElevatorState({
       ...elevatorState,
       humans: [...elevatorState.humans, ...filteredHumans],
